@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from 'jsonwebtoken'
-import dotenv from 'dotenv'
-dotenv.config()
+import { JWT_SECRET } from "@repo/backend-common/config";
 interface Token{
     userId:string,
     iat: Date
@@ -15,7 +14,7 @@ export function Middleware(req:Request,res:Response,next:NextFunction){
 
     const token= auth?.split(" ")[1] || ""
 
-    const decodedToken= jwt.verify(token, process.env.JWT_SECRET) as Token
+    const decodedToken= jwt.verify(token, JWT_SECRET as string)
 
     if(decodedToken){
         req.userId= decodedToken.userId

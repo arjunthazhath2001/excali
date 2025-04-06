@@ -1,23 +1,18 @@
 import express from 'express'
 import cors from 'cors'
-import z from 'zod'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import { Middleware } from './middleware'
-import dotenv from 'dotenv'
-dotenv.config()
+import { JWT_SECRET } from '@repo/backend-common/config'
+import { CreateUserSchema, SignInSchema } from '@repo/common/types'
 
 const app= express()
 app.use(cors())
 app.use(express.json())
 
 app.post('/signup', async(req,res)=>{
-    const requiredBody= z.object({
-        email: z.string().email(),
-        password: z.string().min(5,{message:"password should have min 5 characters"}).max(50,{message:"password not more than 50 characters"})
-    })
 
-    const parsedBody= requiredBody.safeParse(req.body)
+    const parsedBody= CreateUserSchema.safeParse(req.body)
 
     if(!parsedBody.success){
         res.json({message:parsedBody.error.issues[0]?.message})
@@ -50,6 +45,12 @@ app.post('/signup', async(req,res)=>{
 })
 
 app.post('/signin', async(req,res)=>{
+    const parsedBody= SignInSchema.safeParse(req.body)
+
+    if(!parsedBody.success){
+        res.json({message:parsedBody.error.issues[0]?.message})
+        return
+    }
     const {email,password}= req.body
 
     try{//hit the db to find user with this email
@@ -62,7 +63,7 @@ app.post('/signin', async(req,res)=>{
     if(user){
         const verified= await bcrypt.compare(password,user.password)
         if(verified){
-            const token= jwt.sign({user._id}, process.env.JWT_SECRET)
+            const token= jwt.sign({user._id}, JWT_SECRET)
             res.json({"token":token})
 
         }
@@ -70,7 +71,6 @@ app.post('/signin', async(req,res)=>{
         res.json({message:"User does not exist"})
     }
 } )
-
 
 app.post('/createroom', Middleware, async(req,res)=>{
 
